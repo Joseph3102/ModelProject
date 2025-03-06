@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from codrone_edu.drone import *
 
-# Load the MoveNet model for pose detection
+# Load the MoveNet model for pose detectionmghghjgj
 model =hub.load('https://tfhub.dev/google/movenet/singlepose/lightning/4')
 
 # Function to preprocess the frame for MoveNet
