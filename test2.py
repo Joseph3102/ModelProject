@@ -4,8 +4,11 @@ import cv2
 import numpy as np
 from codrone_edu.drone import *
 
-# Load the MoveNet model for pose detectionmghghjgj
-model =hub.load('https://tfhub.dev/google/movenet/singlepose/lightning/4')
+# Load the MoveNet model for pose detection
+model = hub.load('https://tfhub.dev/google/movenet/singlepose/lightning/4')
+
+# Get the inference function from the model
+infer = model.signatures['serving_default']
 
 # Function to preprocess the frame for MoveNet
 def preprocess_frame(frame):
@@ -18,8 +21,9 @@ def preprocess_frame(frame):
 
 # Function to draw pose keypoints on the frame
 def draw_pose_keypoints(frame, keypoints, confidence_threshold=0.3):
+    # Each keypoint is an array [y, x, confidence]
     for kp in keypoints:
-        y, x, confidence = kp
+        y, x, confidence = kp[0], kp[1], kp[2]  # Unpack y, x, and confidence
         if confidence > confidence_threshold:
             cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 0), -1)
     return frame
@@ -28,7 +32,6 @@ def draw_pose_keypoints(frame, keypoints, confidence_threshold=0.3):
 def recognize_yoga_pose(keypoints):
     # Example simple logic based on keypoints (you can refine this for more accuracy)
     # Detect if the pose corresponds to specific poses like Tadasana or Downward Dog
-    # This is a placeholder for more complex logic based on keypoint positions
     if keypoints[0][1] > keypoints[1][1] and keypoints[2][1] < keypoints[3][1]:
         return "Tadasana"
     elif keypoints[1][1] < keypoints[2][1] and keypoints[3][1] < keypoints[4][1]:
@@ -54,6 +57,7 @@ pose_map = {
 }
 
 while True:
+    # Capture a frame from the webcam
     ret, frame = cap.read()
     if not ret:
         print("Error: Failed to capture image.")
@@ -62,11 +66,14 @@ while True:
     # Preprocess the frame for the model
     input_frame = preprocess_frame(frame)
 
-    # Run pose detection
-    outputs = model(input_frame)
+    # Run pose detection using the model
+    outputs = infer(input_frame)
 
-    # Extract keypoints from the model's output
+    # Extract keypoints from the model's output (assuming keypoints are in 'output_0')
     keypoints = outputs['output_0'][0].numpy()
+
+    # The keypoints are structured as [y, x, confidence] for each joint, and we need to reshape
+    keypoints = keypoints.reshape((-1, 3))  # Reshape to (num_keypoints, 3)
 
     # Draw the keypoints on the frame
     frame_with_keypoints = draw_pose_keypoints(frame, keypoints)
